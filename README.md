@@ -42,6 +42,11 @@ The tamper manifest flags any change the model makes to tasks/data, and a file-i
 * Tasks are done in the order of `tasks/INDEX.md`. If the harness compacts or resets context the model resumes from `answers/` - this is part of the test.
 * Tools needed by some tasks are plain `python3` scripts in the task folder.
 
+## If a run stalls or the harness dies
+Nothing is lost: answers are files. Restart the harness in the **same workspace**, paste the same kickoff prompt, and the model resumes at the first
+task without an answer (that is also a test of recovering from a context reset). `watch` can be started again at any time, and `report` works on partial runs:
+scores then cover only the tasks the model reached, and the report says so.
+
 ## What is tested (standard profile)
 
 | category | tasks | what it measures |

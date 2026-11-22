@@ -100,6 +100,8 @@ def cmd_watch(a):
                 break
             if idle >= a.idle_minutes and done:
                 print(f"\nNo activity for {a.idle_minutes} min - compiling what exists.")
+                print("If the run stalled: check the inference-server log and the harness, then resume by restarting the harness in the SAME workspace "
+                      "and pasting the kickoff prompt again (the model continues from the first unanswered task).")
                 break
             time.sleep(a.poll)
     except KeyboardInterrupt:

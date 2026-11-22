@@ -100,10 +100,15 @@ def evaluate(run_dir: Path, workspace_override: Path | None = None) -> dict:
 
 
 def summarize(res, info, answered, t_start, done, inversions, calls, modified, deleted, added) -> dict:
-    n = len(res)
+    n_total = len(res)
     n_ans = sum(1 for r in res if r["answered"])
-    S: dict = {"n_tasks": n, "n_answered": n_ans, "completion": n_ans / n if n else 0, "finished_flag": done,
-               "n_skipped": sum(1 for r in res if "skipped" in r["flags"]), "order_violations": inversions}
+    S: dict = {"n_tasks": n_total, "n_answered": n_ans, "completion": n_ans / n_total if n_total else 0, "finished_flag": done,
+               "n_skipped": sum(1 for r in res if "skipped" in r["flags"]), "order_violations": inversions,
+               "overall_unanswered_as_zero": mean([r["score"] for r in res]) or 0.0}
+    # Everything below is computed over the tasks the model actually reached, so an interrupted run is not
+    # penalised as "drift" or "weakness" for tasks it never saw. Completion and the unanswered-as-zero score are reported separately.
+    res = [r for r in res if r["answered"]] or res
+    n = len(res)
     S["overall"] = mean([r["score"] for r in res]) or 0.0
     S["overall_answered_only"] = mean([r["score"] for r in res if r["answered"]]) or 0.0
     S["strict_accuracy"] = mean([1.0 if r["correct"] else 0.0 for r in res]) or 0.0
@@ -169,7 +174,7 @@ def summarize(res, info, answered, t_start, done, inversions, calls, modified, d
     for r in res:
         if r["category"] == "sentinel":
             groups[r["sentinel_group"]].append(r)
-    S["sentinels"] = [{"group": g, "pos": mean([r["pos"] for r in rs]), "frac": mean([r["pos"] for r in rs]) / n, "score": mean([r["score"] for r in rs]),
+    S["sentinels"] = [{"group": g, "pos": mean([r["pos"] for r in rs]), "frac": mean([r["pos"] for r in rs]) / n_total, "score": mean([r["score"] for r in rs]),
                        "compliance": mean([r["compliance"]["score"] for r in rs if r["compliance"]["score"] is not None]),
                        "est_ctx_tokens_before": sum(x["est_tokens"] for x in res if x["pos"] < min(r["pos"] for r in rs))} for g, rs in sorted(groups.items())]
     thirds = [ordered[: n // 3], ordered[n // 3: 2 * n // 3], ordered[2 * n // 3:]]
@@ -256,7 +261,7 @@ def findings(S) -> list[str]:
     if cp["overall"] is not None:
         f.append(f"Standing-rule compliance (valid JSON, confidence, explanation tag): {pct(cp['overall'])}" + (f"; {cp['fenced_json']} answers were wrapped in markdown fences." if cp["fenced_json"] else "."))
     if S["completion"] < 1:
-        f.append(f"Run incomplete: {S['n_answered']}/{S['n_tasks']} tasks answered.")
+        f.append(f"Run incomplete: {S['n_answered']}/{S['n_tasks']} tasks answered. All scores here cover the answered tasks only; counting the rest as 0 would give {pct(S['overall_unanswered_as_zero'])}.")
     if S["integrity"]["modified"] or S["integrity"]["deleted"]:
         f.append(f"Workspace integrity: {len(S['integrity']['modified'])} file(s) modified and {len(S['integrity']['deleted'])} deleted outside answers/scratch.")
     return f

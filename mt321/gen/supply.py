@@ -270,6 +270,7 @@ def sname(ds, sid):
 
 
 def mk(cat_sub, title, prompt, key, hint, diff, ctx, reads, **kw):
+    prompt = "The data files for this question are in `data/supply/` (see `data/supply/README.md`).\n\n" + prompt
     return Task(category="supply", subcategory=cat_sub, title=title, prompt=prompt, key=key, answer_hint=hint, difficulty=diff,
                 reads=[D + r for r in reads] + [D + "README.md"], est_tokens=ctx.tokens_of([D + r for r in reads]), **kw)
 

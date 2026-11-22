@@ -172,12 +172,15 @@ def build_html(R: dict) -> str:
     if info.get("endpoint"):
         meta.append(f"endpoint {E(info['endpoint'])}")
     A(f'<p class="dimtxt">{" &middot; ".join(meta)}</p>')
+    if S["completion"] < 1:
+        A(f'<div class="card" style="border-color:#f5a524"><b>Partial run.</b> {S["n_answered"]} of {S["n_tasks"]} tasks were answered. All scores and charts below cover the answered tasks only '
+          f'(counting the unanswered ones as 0 would give {pct(S["overall_unanswered_as_zero"])}). Unanswered tasks are listed at the end.</div>')
     if info.get("notes"):
         A(f'<p class="dimtxt">Notes: {E(info["notes"])}</p>')
     hh, cal, tl, cp = S["hallucination"], S["calibration"], S["tools"], S["compliance"]
     sen = S["sentinels"]
     drift = (sen[-1]["score"] - sen[0]["score"]) if len(sen) >= 2 and sen[0]["score"] is not None and sen[-1]["score"] is not None else None
-    A('<div class="grid4">' + kpi("Overall score (all tasks, partial credit)", pct(S["overall"]), f"strict {pct(S['strict_accuracy'])}") +
+    A('<div class="grid4">' + kpi("Overall score (answered tasks, partial credit)", pct(S["overall"]), f"strict {pct(S['strict_accuracy'])}") +
       kpi("Fabrication rate on unanswerable Qs", pct(hh["fabrication_rate"]), f"{hh['fabricated']}/{hh['n_traps']}") +
       kpi("Wrongly refused answerable Qs", pct(hh["over_abstain_rate"]), f"{hh['over_abstained']}/{hh['n_answerable']}") +
       kpi("Tool-call failure rate", pct(tl["failure_rate"]), f"{tl['failed_calls']}/{tl['total_calls']} calls") +
